@@ -1,0 +1,89 @@
+from enaml.widgets.api import Form, Container, Label, CheckBox, PushButton, HGroup, ComboBox
+from enaml.stdlib.fields import IntField, FloatField
+from enaml.core.api import Looper
+from .CustomWidgets import StateLabel
+from enaml.application import deferred_call
+
+enamldef CameraControl(Form):
+    attr cam
+    constraints << [del_bg.width == pb.width]
+    Label:
+        text = 'Shots'
+    IntField: intf:
+        constraints = [width == 60]
+        value := cam.num_shots
+        max_length = 5
+    PushButton: pb:
+        text = "Record BG"
+        clicked :: deferred_call(cam.record_bg)
+    PushButton: del_bg:
+        text = "Del. BG"
+        enabled << cam.background is not None
+        clicked :: deferred_call(cam.delete_bg)
+    PushButton: fil:
+        text = 'Set filter max.'
+    CheckBox: cb:
+        text = 'Signal filter'
+
+enamldef SpecControl(Container):
+    attr model
+
+    func get_wn():
+        return (1e7/model.current_wl if model.current_wl != 0 else 1)
+
+    Form:
+        StateLabel: sl:
+            dev_state << model.state
+        Label:
+            text = model.name
+        Label:
+            text = "Current Wl"
+        Label:
+            align = 'right'
+            text << '%.1f nm'%(model.current_wl)
+        Label:
+            text = "Set Wl"
+        FloatField:
+            text_align = 'right'
+            text_align = 'right'
+            submit_triggers = ['return_pressed']
+            value :: model.set_wavelength(value)
+        Label:
+            text = "Current Wn"
+        Label:
+            align = 'right'
+            text << '%.1f cm-1'%get_wn()
+        Label:
+            text = "Set Wn"
+        FloatField:
+            text_align = 'right'
+            minimum = 100.0
+            submit_triggers = ['return_pressed']
+            value :: model.set_wavelength(1e7/value)
+        Label:
+            text = 'Grating'
+        ComboBox:
+            items = ['35 l/mm', '75 l/mm']
+            index = 0
+
+    HGroup:
+        Looper:
+            iterable = [-50, -25, 25, 50]
+            PushButton:
+                constraints << [width >= 60.0]
+                hug_width = 'ignore'
+                text = "%d"%loop_item
+                clicked ::
+                    if pb1.checked:
+                        deferred_call(model.set_wavelength, 1e7/(get_wn()+loop_item))
+                    else:
+                        deferred_call(model.set_wavelength, model.current_wl+loop_item)
+    HGroup:
+        PushButton: pb1:
+            text = 'cm-1'
+            checkable = True
+            toggled :: pb2.checked = not self.checked
+        PushButton: pb2:
+            text = 'nm'
+            checkable = True
+            toggled :: pb1.checked = not self.checked

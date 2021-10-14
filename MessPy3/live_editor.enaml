@@ -1,0 +1,122 @@
+#------------------------------------------------------------------------------
+# Copyright (c) 2013, Nucleic Development Team.
+#
+# Distributed under the terms of the Modified BSD License.
+#
+# The full license is in the file LICENSE, distributed with this software.
+#------------------------------------------------------------------------------
+""" An example of using the live editor applib components.
+
+This examples shows how the various applib live editor components can be
+stitched together to form a live Enaml code editor application.
+
+<< autodoc-me >>
+"""
+import sys
+import traceback
+
+import enamlx
+enamlx.install()
+
+from enaml.applib.live_editor_model import LiveEditorModel
+from enaml.applib.live_editor_view import (
+    ModelEditorPanel, ViewEditorPanel, TracebackPanel, ViewPanel
+)
+from enaml.layout.api import HSplitLayout, AreaLayout, DockBarLayout
+from enaml.widgets.api import Window, Container, DockArea, DockItem
+from enaml.application import Application
+
+MODEL_TEXT = """
+from atom.api import *
+from Plans.ScanSpectrum import *
+from Plans.common import *
+
+
+class DemoModel(Atom):
+    pass
+
+"""
+
+
+VIEW_TEXT = """
+from enaml.widgets.api import *
+from enaml.layout.api import *
+from enaml.stdlib.fields import *
+from enaml.core. api import *
+
+from Views.CustomWidgets import *
+from Views.CommonViews import *
+
+enamldef DemoContainer(Container):
+    pass
+
+"""
+
+
+enamldef Main(Window):
+    title = 'Live Editor Demo'
+    initial_size = (1024, 768)
+    attr editor_model = LiveEditorModel(
+        model_text=MODEL_TEXT,
+        model_item='DemoModel',
+        model_filename='demo.py',
+        view_text=VIEW_TEXT,
+        view_item='DemoContainer',
+        view_filename='demo.enaml',
+    )
+
+    func handle_uncaught_exception(exc, value, tb):
+        """Send uncaught exception to the model to avoid crashing the editor."""
+        editor_model.traceback = "".join(traceback.format_exception(exc, value, tb))
+
+    initialized::
+        sys.excepthook = handle_uncaught_exception
+        #from qt_material import apply_stylesheet
+        #app = Application.instance()
+        #apply_stylesheet(app._qapp, theme='dark_teal.xml')
+
+
+    Container:
+        padding = 0
+        DockArea:
+            layout = AreaLayout(
+                HSplitLayout(
+                    'view-editor-item',
+                    'view-item',
+                    sizes=[1, 3],
+                ),
+                dock_bars=[
+                    DockBarLayout(
+                        'model-editor-item',
+                        'traceback-item',
+                        position='left',
+                    ),
+                ],
+            )
+            DockItem:
+                name = 'model-editor-item'
+                title = 'Model Editor'
+                stretch = 1
+                closable = False
+                ModelEditorPanel:
+                    model = editor_model
+            DockItem:
+                name = 'view-editor-item'
+                title = 'View Editor'
+                stretch = 1
+                closable = False
+                ViewEditorPanel:
+                    model = editor_model
+            DockItem:
+                name = 'traceback-item'
+                title = 'Errors'
+                stretch = 1
+                closable = False
+                TracebackPanel:
+                    model = editor_model
+            DockItem:
+                name = 'view-item'
+                title = 'Live View'
+                stretch = 4
+                ViewPanel:
+                    model = editor_model

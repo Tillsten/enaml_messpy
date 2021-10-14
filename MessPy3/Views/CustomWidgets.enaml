@@ -1,0 +1,51 @@
+from enaml.widgets.api import *
+from enaml.stdlib.fields import *
+from enaml.layout.api import *
+from enaml.styling import (
+      StyleSheet, Style, Setter
+)
+
+enamldef StateLabel(Label):
+    attr dev_state
+    constraints << [(width<=100)|'weak']
+
+    func color(dev_state):
+        d = dict(init='lightblue', idle='lightgreen', busy='yellow', moving='yellow', error='red')
+        return d[dev_state]
+
+    func gradient(color):
+        return ('lineargradient(x1: 0, y1:0, x2:0, y2:1, '
+                        'stop: 0 %s,  stop: 1 #aaaaaa)'%color)
+    StyleSheet:
+        Style:
+            Setter:
+                field = 'background'
+                value << gradient(color(dev_state))
+            Setter:
+                field = 'border'
+                value = 'solid 3px black'
+    vertical_align = 'center'
+    align = 'center'
+    text << '<font color="%s">%s</font>'%('black', dev_state)
+
+
+enamldef FreqView(GroupBox):
+    attr wl: float = 200.
+    constraints = [hbox(wl_field, l1, wn_field, l2),
+                    l1.width == 50, l2.width == 50,
+                    wl_field.width <= 100, wn_field.width <= 100]
+    Label: l1:
+        text = 'nm'
+    FloatField: wl_field:
+        converter  = lambda x: '%.1f'%x
+        minimum = 100
+        value << parent.wl
+        value ::
+            parent.wl = value
+    Label: l2:
+        text = 'cm-1'
+    FloatField: wn_field:
+        converter  = lambda x: '%.1f'%x
+        value << 1e7/max(parent.wl, 1)
+        value ::
+            parent.wl = 1e7/max(parent.wl, 1)

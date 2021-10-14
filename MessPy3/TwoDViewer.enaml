@@ -1,0 +1,63 @@
+
+from enaml.widgets.api import *
+from enaml.layout.api import *
+from enamlx.widgets.api import PlotArea, PlotItemArray, DoubleSpinBox
+from enaml.image import Image
+from matplotlib.figure import Figure
+from enaml.core.api import Conditional, Looper
+from matplotlib import rcParams
+rcParams['font.family'] = 'Arial'
+rcParams['font.size'] = 14
+
+import math
+import numpy as np
+
+enamldef DemoContainer(VGroup):
+    spacing = 10
+    attr model
+    constraints << [width >= 800, height >= 500, height <= 1000]
+    PushButton: pb:
+        text = 'View Inferogramm'
+        checkable = True
+    Conditional:
+        condition << pb.checked
+        Form:
+            SpinBox: sl:
+                minimum = 0
+                maximum = 127
+                value = 64
+        PlotArea:
+            constraints << [ width >= 300,  height >= 500]
+            PlotItemArray:
+               x << model.data.taus
+               y << model.data.data[:, sl.value]
+               antialias = True
+               line_pen = {'width': 3, 'color': 1}
+    MPLCanvas: canvas:
+        toolbar_visible = True
+        figure = Figure(facecolor='None')
+        initialized ::
+            ax = figure.add_subplot (111)
+            m = abs(model.data.data_fft.real).max()
+            cb = ax.contour(model.data.data_fft.real, levels=31,
+                            vmin=-m, vmax=m, cmap='seismic')
+            cb.set_clim(-0.04, 0.04)
+    Label:
+        text = 'test'
+    Container:
+        SpinBox: sb2:
+            value = 0
+        SpinBox: sb1:
+            value = model.data.data_fft.shape[0]
+    PlotArea:
+        constraints << [ width >= 300,  height >= 400]
+        PlotItemArray:
+            x = np.arange(128)
+            y << model.data.data_fft.real.sum(0)
+
+    PushButton:
+        text = 'Open'
+        clicked::
+            model.path = FileDialogEx.get_open_file_name(name_filters=['*.scan'])
+
+

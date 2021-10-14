@@ -1,0 +1,93 @@
+
+from enaml.widgets.api import *
+from enaml.layout.api import *
+from enaml.stdlib.fields import IntField
+
+from enamlx.widgets.api import PlotArea, PlotItemArray, DoubleSpinBox
+import numpy as np
+
+
+
+enamldef ControlGroup(HGroup):
+    constraints << [width <= 800]
+    Label:
+        text = 'Freq'
+    DoubleSpinBox: sbox:
+        maximum = 100
+        minimum = 0
+        decimals = 1
+        value := model.freq
+    Label:
+        text = 'X Unit'
+
+    RadioButton:
+        text = model.__class__.xunit.items[0]
+        clicked :: model.xunit = text
+    RadioButton:
+        text = model.__class__.xunit.items[1]
+        clicked :: model.xunit = text
+    RadioButton:
+        text = model.__class__.xunit.items[2]
+        clicked :: model.xunit = text
+    RadioButton:
+        text = model.__class__.xunit.items[3]
+        clicked :: model.xunit = text
+    PushButton:
+        text = 'Amp Modulation'
+        clicked :: model.amp_modulation(sep.value, wid.value)
+    IntField: sep:
+        value = 64
+    IntField: wid:
+        value = 32
+
+
+enamldef ShaperView2(Container):
+    attr model
+    ControlGroup:
+        pass
+    DockArea:
+        layout = VSplitLayout('a', 'b', 'd')
+        DockItem:
+            name = 'a'
+            title = 'Amplitude'
+            PlotArea:
+                PlotItemArray:
+                    x << model.x
+                    y << model.amp
+
+        DockItem:
+            name = 'b'
+            title = 'Phase'
+            PlotArea:
+                PlotItemArray:
+                    x << model.x
+                    y << model.phase
+        DockItem:
+            name = 'd'
+            title = 'RF Waveform'
+            PlotArea:
+                PlotItemArray:
+                    x << model.x
+                    y << model.rf
+
+enamldef ShaperView(Container):
+    attr model
+    ControlGroup:
+        pass
+
+    PlotArea:
+        PlotItemArray:
+            x << model.x
+            y << model.amp
+
+        PlotItemArray:
+            x << model.x
+            y << model.phase
+        PlotItemArray:
+            x << model.x
+            y << model.rf
+
+enamldef ShaperWindow(MainWindow):
+    attr model
+    ShaperView:
+        model = parent.model

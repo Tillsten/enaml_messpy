@@ -1,0 +1,51 @@
+from PlotWidget import Plotter, Line
+from enaml.core.api import Looper
+from enaml.widgets.api import Container
+from enaml.layout.api import vbox
+
+enamldef CamPlotter(Container):
+    attr cam
+    constraints << [vbox(pi1, pi2, pi3, spacing=0),
+                    pi1.height == pi2.height,
+                    pi2.height == pi3.height]
+    padding = 0
+    Plotter: pi1:
+        Looper:  loop1:
+            iterable << cam.lines
+            Line:
+                attr last_read << cam.last_read
+                initialized :: last_read
+                y  = last_read.lines[loop.index]
+                func update_d():
+                    self.x = cam.freqs
+                    self.y = last_read.lines[loop.index]
+                    self.set_data(x=self.x, y=self.y)
+                last_read ::
+                    update_d()
+
+    Plotter: pi2:
+        Looper: loop2:
+            iterable << cam.std_lines
+            Line:
+                attr last_read << cam.last_read
+                initialized :: last_read
+                y = last_read.std[loop.index]
+                func update_d():
+                    self.x = cam.freqs
+                    self.y = last_read.std[loop.index]
+                    self.set_data(x=self.x, y=self.y)
+                last_read ::
+                    update_d()
+
+    Plotter: pi3:
+        Looper: loop3:
+            iterable << cam.sig_lines
+            Line:
+                attr last_read << cam.last_read
+                initialized :: last_read
+                func update_d():
+                    self.x = cam.freqs
+                    self.y = last_read.sig[loop.index]
+                    self.set_data(x=self.x, y=self.y)
+                last_read ::
+                    update_d()

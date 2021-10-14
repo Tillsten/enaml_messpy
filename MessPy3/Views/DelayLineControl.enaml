@@ -1,0 +1,68 @@
+from enaml.widgets.api import Form, Container, Label, CheckBox, PushButton, HGroup
+from enaml.stdlib.fields import IntField, FloatField
+from enaml.core.api import Looper
+from enaml.application import timed_call, deferred_call
+from Views.CustomWidgets import StateLabel
+
+
+enamldef DelayLineControl(Form):
+
+    attr delay_line
+    attr read_pos = self.delay_line.get_pos_fs()
+
+    func updater():
+        self.read_pos = delay_line.get_pos_fs()
+        if delay_line.is_moving():
+            timed_call(100, updater)
+
+    Label:
+        align = 'right'
+        text = 'Name'
+    Label:
+        text << delay_line.name
+    Label: pos_label:
+        align = 'right'
+        text = 'Position'
+    Label: pos :
+        text << "%.2f fs"%(read_pos)
+    Label:
+        text = 'Target Pos'
+        align = 'right'
+    FloatField: field:
+        hug_width = 'ignore'
+        converter = lambda x: '%.1f'%x
+        value ::
+            delay_line.set_pos_fs(self.value)
+            timed_call(100, updater)
+    Label:
+        pass
+    HGroup:
+        padding = 0
+        PushButton:
+            text = 'Set Home'
+            clicked :: delay_line.set_home()
+        PushButton:
+            text = 'Goto Home'
+            clicked :: delay_line.set_pos_fs(0)
+    StateLabel: sl:
+        dev_state << delay_line.state
+    Container:
+        padding = 0
+        HGroup:  pre:
+            padding = 0
+            Looper: looper:
+                iterable = [-100, -1000, -10000]
+                PushButton:
+                    constraints = [width == 100]
+                    attr labels = '-100 -1k -10k'.split()
+                    text = labels[loop.index]
+                    clicked :: setattr(field, 'value', read_pos+float(loop.item))
+        HGroup: pre2:
+            padding = 0
+            Looper: looper2:
+                iterable = [100, 1000, 10000]
+                PushButton:
+                    constraints = [width == 100]
+                    attr labels = '100 1k 10k'.split()
+                    text = labels[loop.index]
+                    clicked :: setattr(field, 'value', read_pos+float(loop.item))

@@ -1,0 +1,88 @@
+from enaml.widgets.api import (MainWindow, ToolBar, PushButton, DockArea,
+         DockItem, GroupBox, Timer, Container)
+from enaml.layout.api import hbox, vbox, align
+from enaml.layout.dock_layout import VSplitLayout, HSplitLayout
+from enaml.core.api import Looper, Conditional
+from enaml.application import deferred_call, timed_call
+from enaml.icon import Icon
+
+import pyqtgraph as pg
+
+import enamlx
+enamlx.install()
+
+#import numpy as np
+#from Plans.PumpProbeView import PumpProbeSettingsView
+
+from qtawesome import icon as qicon
+from Instruments.interfaces import TuneableCam
+
+#from Views.CameraControl import CameraControl, SpecControl
+#from Views.DelayLineControl import DelayLineControl
+#from Views.CamPlotter import CamPlotter
+
+from Views import CamPlotter, DelayLineControl, CameraControl, SpecControl
+from Views.MyStyle import DarkStyle
+
+enamldef MessPy3(MainWindow):
+    title = 'MessPy3'
+    attr app
+
+    ToolBar:
+        PushButton:
+            text = "Pump-probe"
+            icon = Icon(_tkdata=qicon('fa.folder-open', color='teal'))
+        PushButton:
+            text = "Calibration"
+            icon = Icon(_tkdata=qicon('fa5s.ruler', color='teal'))
+    Container:
+        constraints = [hbox(da, menu), (da.width >= 300) | 'weak', menu.width <= 800]
+        padding = 0
+        DockArea: da:
+            style = ''
+            layout = VSplitLayout(*[i.name for i in app.cams])
+            Looper:
+                iterable << app.cams
+                DockItem:
+                    closable = False
+                    title << loop.item.name
+                    name << loop.item.name
+                    stretch = 1
+                    CamPlotter:
+                        cam << loop.item
+        Container: menu:
+            constraints << [vbox(*self.visible_widgets()),
+                            align('width', *self.visible_widgets()),
+                            cc.width == 500]
+            hug_width = 'strong'
+
+            GroupBox: cc:
+                title = 'Camera'
+                CameraControl:
+                    cam << app.cams[0]
+            Conditional: spec:
+                condition << isinstance(app.cams[0], TuneableCam)
+                GroupBox:
+                    title = 'Spec Control'
+                    SpecControl:
+                        hug_width = 'ignore'
+                        model = app.cams[0]
+
+            GroupBox: dl:
+                title = 'Delay Line'
+                DelayLineControl:
+                    delay_line << app.delay_line
+
+    func read_cam():
+
+        for c in app.cams:
+            if not c.reading:
+                deferred_call(c.start_read)
+
+
+    Timer: cam_runner:
+        interval = 10
+        single_shot = False
+        timeout :: read_cam()
+
+    activated :: cam_runner.start()

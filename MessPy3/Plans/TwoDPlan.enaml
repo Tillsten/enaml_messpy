@@ -1,0 +1,63 @@
+naml.widgets.api import *
+from enaml.layout.api import *
+from enaml.stdlib.fields import IntField, FloatField
+from Plans.PumpProbeView import TimePointSelector
+from Plans.CommonViews import SampleInfoView
+import atom.api as a
+from enaml.core.api import Looper, Conditional
+from EnamlModel import SampleInfo
+si = SampleInfo()
+import numpy as np
+
+
+
+enamldef DemoContainer(Container):
+    Form:
+        Label:
+            text = "Max T2 Delay"
+        FloatField: max_t:
+            minimum = 0
+            value = 4000.0
+        Label:
+            text = "T2 Step"
+        FloatField: step_t:
+            minimum = 1
+            value = 25.0
+        Label: num_t:
+            text = "%d Points"%(max_t.value//step_t.value)
+            align = 'center'
+
+    Form:
+        Label:
+            text = 'Rot. Frame'
+        FloatField: rf:
+            value = 0.0
+        Label:
+            text = "Phase Cycle"
+        HGroup:
+            padding = 0
+            PushButton: pb1:
+                checkable = True
+                checked = True
+                text = '2'
+                toggled ::
+                    pb2.checked = False
+            PushButton: pb2:
+                checkable = True
+                text = '4'
+                toggled ::
+                    pb1.checked = False
+    GroupBox:
+        title = 'Waiting Times'
+        padding = 0
+        TimePointSelector: tps:
+            padding = 0
+
+        Label:
+            text <<  ''.join(['%0.1f,  '%i for i in tps.model.t_list])
+    HGroup:
+        PushButton:
+            text = 'Ok'
+        PushButton:
+            text = 'Cancel'
+

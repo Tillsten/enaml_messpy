@@ -1,0 +1,81 @@
+from enaml.widgets.api import (Window, Container, GroupBox, Label, Form,
+                               RadioButton, SpinBox, Field, PushButton,
+                               ImageView, Timer, RawWidget, ComboBox,
+                               CheckBox, MainWindow, DockArea, DockItem)
+from enaml.layout.api import vbox, hbox, align, grid, spacer
+from enaml.stdlib.slider_transform import FloatTransform
+from enaml.stdlib.fields import IntField, FloatField
+from enaml.core.api import Looper, Conditional
+import atom.api as a
+
+from .CommonViews import MetaView, FocusView, SetupInfoView, SampleInfoView
+
+class DelayPointsSettings(a.Atom):
+    start = a.Float()
+    stop = a.Float()
+    step = a.Float()
+
+    use_log = a.Bool()
+    log_end = a.Float()
+    log_points = a.Int()
+
+    @a.observe('start, stop, step')
+    def make_list(self):
+        lin = np.arange(self.start, self.stop+0.0001, self.step)
+
+enamldef TimePointSelector(Container):
+    attr model : DelayPointsSettings = DelayPointsSettings()
+    GroupBox:
+        layout_constraints => ():
+            g = grid([l1, l2, l3],
+                     [s1, s2, s3])
+            w = [i.width <= 80 for i in (s1, s2, s3)]
+
+            constraints = [hbox(spacer, g, spacer), *w,
+                           align('h_center', g, contents_h_center)]
+            return constraints
+        Label: l1:
+            text = "Start"
+        Label: l2:
+            text = "Stop"
+        Label: l3:
+            text = "Step"
+
+        FloatField: s1:
+            value := model.start
+            maximum << model.stop
+            max_length = 5
+        FloatField: s2:
+            value := model.stop
+            minimum << model.start
+            max_length = 5
+        FloatField: s3:
+            value := model.step
+            minimum = 1e-7
+            max_length = 5
+    Form:
+        Label:
+            text = 'Use log'
+        CheckBox:
+            checked := model.use_log
+    Conditional:
+        condition << model.use_log
+        Container:
+            Label:
+                text = "<h1>Hallo</h1>"
+
+
+enamldef PumpProbeSettingsView(Container):
+    attr pp
+    constraints << [vbox(*children), width <= 500]
+    padding = 0
+    GroupBox:
+        title = "Experiment"
+        MetaView: mv:
+            meta = parent.pp
+        SetupInfoView: setup_iv:
+            si = pp.setup_info
+        SampleInfoView: siv:
+            sample_info = pp.sample_info
+    TimePointSelector:
+        pass

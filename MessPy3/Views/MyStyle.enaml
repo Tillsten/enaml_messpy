@@ -1,0 +1,32 @@
+from enaml.styling import (
+      StyleSheet, Style, Setter
+)
+enamldef DarkStyle(StyleSheet):
+    Style:
+        Setter:
+            field = 'color'
+            value = 'white'
+        Setter:
+            field = 'font'
+            value = '12pt Segoe UI'
+        Setter:
+            field = 'border'
+            value = '1px solid #eeeeee'
+
+    Style:
+        element = 'PushButton'
+        Setter:
+            field = 'background'
+            value = ('lineargradient(x1: 0, y1:0, x2:0, y2:1, '
+                     'stop: 0 #222222, stop: 0.5 #1A1A1A, stop: 1 #111111)')
+
+    Style:
+        Setter:
+            field = 'background'
+            value = '#33333333'
+
+    Style:
+        element = 'Field'
+        Setter:
+            field = 'background'
+            value = '%444444'

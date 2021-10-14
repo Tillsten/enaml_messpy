@@ -1,0 +1,215 @@
+from enaml.widgets.api import Window, Container, GroupBox, Label, Form, RadioButton, SpinBox, \
+                              Field, PushButton, ImageView, Timer, RawWidget, ComboBox, CheckBox
+from enaml.layout.api import vbox, hbox, align, grid, spacer
+from enaml.stdlib.slider_transform import FloatTransform
+from enaml.stdlib.fields import IntField, FloatField
+from enaml.core.api import Looper, Conditional
+from enaml.image import Image
+from datetime import datetime
+import atom.api as a
+
+from .CustomWidgets import FreqView
+
+class DelayPointsSettings(a.Atom):
+    start = a.Float(-1)
+    stop = a.Float(1)
+    step = a.Float(0.2)
+
+    use_log = a.Bool(True)
+    log_end = a.Float(100)
+    log_points = a.Int(50)
+
+    t_list = a.Value([1])
+
+    @a.observe(*'start stop step use_log log_end log_points'.split())
+    def make_list(self, change):
+        lin = np.arange(self.start, self.stop+0.0001, self.step)
+        log = np.geomspace(self.stop, self.log_end, self.log_points)
+        if self.use_log:
+            lin = np.hstack((lin, log))
+        self.t_list = lin
+        return lin
+
+enamldef TimePointSelector(Container):
+    attr model : DelayPointsSettings = DelayPointsSettings()
+    Container:
+        padding = 0
+        layout_constraints => ():
+            g = grid([l1, l2, l3],
+                     [s1, s2, s3])
+            w = [i.width <= 80 for i in (s1, s2, s3)]
+
+            constraints = [hbox(spacer, g, spacer), *w,
+                           align('h_center', g, contents_h_center)]
+            return constraints
+        Label: l1:
+            text = "Start (ps)"
+        Label: l2:
+            text = "Stop (ps)"
+        Label: l3:
+            text = "Step (ps)"
+
+        FloatField: s1:
+            value := model.start
+            maximum << model.stop
+            max_length = 5
+        FloatField: s2:
+            value := model.stop
+            minimum << model.start
+            max_length = 5
+        FloatField: s3:
+            value := model.step
+            minimum = 1e-7
+            max_length = 5
+    CheckBox:
+        checked := model.use_log
+        text = 'Use Log'
+    Conditional:
+        condition << model.use_log
+        Container:
+            Label:
+                text = 'Log End  (ps)'
+            FloatField:
+                value := model.log_end
+            Label:
+                text = 'Log-Points'
+            IntField:
+                value := model.log_points
+
+
+enamldef FreqView(GroupBox):
+        attr wl: float = 200.
+        constraints = [hbox(wl_field, l1, wn_field, l2),
+                       l1.width == 50, l2.width == 50,
+                       wl_field.width <= 100, wn_field.width <= 100]
+        Label: l1:
+            text = 'nm'
+        FloatField: wl_field:
+            converter  = lambda x: '%.1f'%x
+            value << parent.wl
+            value ::
+                parent.wl = value
+        Label: l2:
+            text = 'cm-1'
+        FloatField: wn_field:
+            converter  = lambda x: '%.1f'%x
+            value << 1e7/parent.wl
+            value ::
+                parent.wl = 1e7/value
+
+
+enamldef MetaView(Container):
+    attr meta
+    Label:
+        text = 'Datetime:'
+    Label:
+        text = datetime.fromtimestamp(meta.creation_time).isoformat(' ', 'seconds')
+    Label:
+        text = 'Operator'
+    Field:
+        text := meta.operator
+
+
+enamldef ExcitationInfoView(Form):
+    attr exi
+    Label:
+        text = 'Excitation Wavelength'
+    Field:
+        text := exi.excitation_wavelength
+    Label:
+        text = 'Excitation Energy'
+    Field:
+        text := exi.excitation_energy_mw
+
+
+enamldef FocusView(Container):
+    attr focus
+    constraints << [grid([c1, x_lbl, y_lbl],
+                         [lbl_pr, x_pr, y_pr],
+                         [lbl_pu, x_pu, y_pu],
+                         [lbl_ref, x_ref, y_ref]),
+                    x_pu.width <= 50, y_pu.width <= 50,
+                    x_pr.width <= 50, y_pr.width <= 50,
+                    x_ref.width <= 50, y_ref.width <= 50,]
+    Container: c1:
+        pass
+    Label: lbl_pr:
+        text = "Probe"
+    Label: x_lbl:
+        text = 'x (μm)'
+        align = 'center'
+    Label: y_lbl:
+        text = 'y (μm)'
+        align = 'center'
+    IntField: x_pr:
+        value := focus.probe_x
+    IntField: y_pr:
+        value := focus.probe_y
+    Label: lbl_pu:
+        text = "Pump"
+    IntField: x_pu:
+        value := focus.pump_x
+    IntField: y_pu:
+        value := focus.pump_y
+    Label: lbl_ref:
+        text = "Ref"
+    IntField: x_ref:
+        value := focus.ref_x
+    IntField: y_ref:
+        value := focus.ref_y
+
+
+enamldef SampleInfoView(Form):
+    attr sample_info
+    attr list_of_samples: list = config.list_of_samples
+    attr list_of_solvents: list = config.list_of_solvents
+
+    Label:
+        text = 'Sample'
+    Field:
+        text := sample_info.sample_name
+    PushButton:
+        text = 'Add'
+        clicked ::
+            sn = sample_info.sample_name
+            if sn not in config.list_of_samples and sn !='None':
+                config.list_of_samples.append(sn)
+                cb1.items = config.list_of_samples
+                cb1.index = len(config.list_of_samples)-1
+    ComboBox: cb1:
+        items << list_of_samples
+        selected_item >> sample_info.sample_name
+    Label:
+        text = 'Solvent'
+    Field:
+        text := sample_info.solvent_name
+    PushButton:
+        text = 'Add'
+        clicked ::
+            sn = sample_info.sample_name
+            if sn not in config.list_of_samples and sn !='None':
+                config.list_of_samples.append(sn)
+                cb2.items = config.list_of_samples
+                cb2.index = len(config.list_of_samples)-1
+    ComboBox: cb2:
+        items = list_of_solvents
+        selected_item >> sample_info.solvent_name
+    Label:
+        text = 'Thickness'
+    Field:
+        text := sample_info.thickness
+    Label:
+        text = 'Annotations'
+    Field:
+        text := sample_info.annotations
+
+
+enamldef SetupInfoView(Container):
+    attr si
+    ExcitationInfoView:
+        exi = si
+    FocusView:
+        focus = si.focus
+    IntField:
+        value := si.shots
+        minimum = 10
