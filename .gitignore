@@ -2,3 +2,4 @@
 /.vscode
 /__enamlcache__
 /__pycache__
+*.enamlc
