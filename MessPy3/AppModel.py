@@ -42,8 +42,8 @@ if __name__ == '__main__':
     #from qt_material import apply_stylesheet
     app = QtApplication()
     #apply_stylesheet(app._qapp, theme='light_blue.xml')
-    import qdarkstyle
-    app._qapp.setStyleSheet(qdarkstyle.load_stylesheet())
+    #import qdarkstyle
+    #app._qapp.setStyleSheet(qdarkstyle.load_stylesheet())
     with imports():
         from AppView import MessPy3
 

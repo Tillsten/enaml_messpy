@@ -6,6 +6,7 @@ from enaml.stdlib.fields import IntField, FloatField
 from enaml.core.api import Looper, Conditional
 from enaml.image import Image
 from datetime import datetime
+import numpy as np
 import atom.api as a
 
 from .CustomWidgets import FreqView

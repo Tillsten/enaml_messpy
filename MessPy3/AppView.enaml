@@ -22,12 +22,13 @@ from Instruments.interfaces import TuneableCam
 #from Views.CamPlotter import CamPlotter
 
 from Views import CamPlotter, DelayLineControl, CameraControl, SpecControl
-from Views.MyStyle import DarkStyle
+from Views.MyStyle import MesspyStyle
 
 enamldef MessPy3(MainWindow):
     title = 'MessPy3'
     attr app
-
+    #MesspyStyle:
+    #    pass
     ToolBar:
         PushButton:
             text = "Pump-probe"

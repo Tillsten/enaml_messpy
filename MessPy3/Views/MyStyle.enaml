@@ -1,32 +1,116 @@
-from enaml.styling import (
-      StyleSheet, Style, Setter
-)
-enamldef DarkStyle(StyleSheet):
-    Style:
-        Setter:
-            field = 'color'
-            value = 'white'
-        Setter:
-            field = 'font'
-            value = '12pt Segoe UI'
-        Setter:
-            field = 'border'
-            value = '1px solid #eeeeee'
+from enaml.core.api import Looper
+from enaml.styling import *
 
+PRIMARY_COLOR = '#2979ff'
+PRIMARY_LIGHT_COLOR = '#75a7ff'
+SECONDARY_COLOR = '#f5f5f5'
+SECONDARY_LIGHT_COLOR = '#ffffff'
+SECONDARY_DARK_COLOR = '#e6e6e6'
+PRIMARY_TEXT_COLOR = '#3c3c3c'
+SECONDARY_TEXT_COLOR = '#555555'
+
+style_dict = {
+    'font-family': 'Segoe UI',
+    'font-size': '11pt',
+    'color': SECONDARY_TEXT_COLOR,
+    'background': '#00000000',
+    'border': '0pt',
+
+}
+
+but_dict = {
+    'color': SECONDARY_LIGHT_COLOR,
+    'font-weight': 'light',
+    'font-style': 'small-caps',
+    'background': PRIMARY_COLOR,
+    'border': '2px solid ' + PRIMARY_COLOR,
+    'border-radius': '4px',
+}
+
+field_dict = {
+    'color': PRIMARY_TEXT_COLOR,
+    'font-weight': 'light',
+    'border-width': '0pt 0pt 2px 0pt',
+    'background': SECONDARY_LIGHT_COLOR,
+    'border-color': PRIMARY_COLOR,
+    'border-bottom-style': 'solid',
+    'border-radius': '0px',
+    'text-align': 'right',
+}
+
+special_buttons = {
+    'color': PRIMARY_COLOR,
+    #'border-color': PRIMARY_COLOR,
+    #'background': SECONDARY_LIGHT_COLOR,
+    #'border-bottom-style': 'solid',
+    #'border-radius': '10px',
+    'width': '25px',
+    #'border': '5pt',
+    'text-align': 'right',
+    'icon-size': '40px 40px',
+}
+
+gb_styles = {
+    'color': PRIMARY_COLOR,
+    #'font-weight': 'light',
+    'background': SECONDARY_COLOR,
+    'border-color': PRIMARY_COLOR,
+    'border-style': 'solid',
+    'border-radius': '4px',
+    'border-width': '1px',
+    'text-align': 'right',
+    'margin-top': '18px',
+}
+enamldef MesspyStyle(StyleSheet):
+    Style:
+        Looper:
+            iterable = style_dict
+            Setter:
+                field = loop_item
+                value = style_dict[loop_item]
     Style:
         element = 'PushButton'
-        Setter:
-            field = 'background'
-            value = ('lineargradient(x1: 0, y1:0, x2:0, y2:1, '
-                     'stop: 0 #222222, stop: 0.5 #1A1A1A, stop: 1 #111111)')
-
+        Looper:
+            iterable = but_dict
+            Setter:
+                field = loop_item
+                value = but_dict[loop_item]
     Style:
-        Setter:
-            field = 'background'
-            value = '#33333333'
-
+        element = 'Field, SpinBox'
+        Looper:
+            iterable = field_dict
+            Setter:
+                field = loop_item
+                value = field_dict[loop_item]
     Style:
-        element = 'Field'
+        pseudo_element = 'down-button, up-button'
+        Looper:
+            iterable = special_buttons
+            Setter:
+                field = loop_item
+                value = special_buttons[loop_item]
+    Style:
+        pseudo_element = 'up-arrow, down-arrow'
+        Setter:
+            field = 'width'
+            value = '12px'
+    Style:
+        element = 'GroupBox'
+        Looper:
+            iterable = gb_styles
+            Setter:
+                field = loop_item
+                value = gb_styles[loop_item]
+    Style:
+        pseudo_element = 'title'
+        Setter:
+            field = 'subcontrol-origin'
+            value = 'margin'
+    Style:
+        element = 'MainWindow'
         Setter:
             field = 'background'
-            value = '%444444'
+            value = SECONDARY_COLOR
+
+
+

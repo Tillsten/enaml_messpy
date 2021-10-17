@@ -7,6 +7,8 @@ import asyncio
 import json
 import atexit
 from typing import ClassVar
+import threading
+
 
 def get_dir():
     import os
@@ -18,7 +20,7 @@ class Device(Atom):
     state = Enum('init', 'idle', 'busy', 'error', 'custom', 'moving')
     config = Dict()
 
-    available_devices : 'list[Device]' = []
+    available_devices: 'list[Device]' = []
 
     def _config_default(self):
         conf_file = (get_dir() / self.name).with_suffix('.cfg')
@@ -46,7 +48,6 @@ class Device(Atom):
             json.dump(self.config, f)
 
 
-
 class CamRead(Atom):
     lines = Typed(np.ndarray)
     std = Typed(np.ndarray)
@@ -68,15 +69,18 @@ class Cam(Device):
     reading = Bool()
     read_finished = Event()
 
-
     def __init__(self) -> None:
         super().__init__()
 
+    def start_read(self):
+        self.reading = True
+        t = threading.Thread(target=self.read_cam)
+        t.start()
 
     async def async_read_cam(self) -> CamRead:
         pass
 
-    def read_cam(self) -> CamRead:
+    def read_cam(self) -> None:
         raise NotImplementedError
 
     def record_bg(self):
@@ -102,6 +106,7 @@ class TuneableCam(Cam):
 
     def get_grating(self) -> int:
         raise NotImplementedError
+
 
 class MotorAxis(Device):
     position = Float()
@@ -164,7 +169,6 @@ class Shutter(Device):
             self.toggle()
 
 
-
 def dispersion(nu, nu0, GVD, TOD, FOD):
     """Calulates the dispersion for given frequencies"""
     x = nu - nu0
@@ -172,7 +176,9 @@ def dispersion(nu, nu0, GVD, TOD, FOD):
     facs = np.array([GVD, TOD, FOD]) / np.array([2, 6, 24])
     return x**2 * facs[0] + x**3 * TOD * facs[1] + x**3 * FOD * facs[2]
 
+
 from scipy.constants import c
+
 
 class DispParams(Atom):
     center_wl = Float(5000)
@@ -183,6 +189,7 @@ class DispParams(Atom):
     def phase(self, nu):
         nu0 = c / self.center_wl * 1000
         return dispersion(nu, nu0, self.gvd, self.tod, self.fod)
+
 
 def double_pulse_mask(nu: np.ndarray, nu_rf: float, tau: float, phi1: float,
                       phi2: float):
@@ -207,7 +214,6 @@ def double_pulse_mask(nu: np.ndarray, nu_rf: float, tau: float, phi1: float,
     return double
 
 
-
 class DoublePulseParams(Atom):
     delay = Float(4000)
     step = Float(50)
@@ -220,7 +226,7 @@ class DoublePulseParams(Atom):
 
 
 class Shaper(Device):
-    pixel = Int(4096*3)
+    pixel = Int(4096 * 3)
     calibration = Tuple(Float).tag(cfg=True)
     amplitude = Range(0, 1, 0.2).tag(cfg=True)
     power = Range(0).tag(cfg=True)
@@ -233,9 +239,3 @@ class Shaper(Device):
     @property
     def nu(self):
         return np.polyval(self.calibration, np.arange(self.pixel))
-
-
-
-
-
-

@@ -13,13 +13,8 @@ class MockCam(Cam):
     freqs = set_default(np.arange(400))
     reading = set_default(False)
 
-    def start_read(self):
-        import threading
-        self.reading = True
-        t = threading.Thread(target=self.read_cam)
-        t.start()
 
-    def read_cam(self) -> CamRead:
+    def read_cam(self) -> None:
         #print('read')
         x = np.arange(128)
         data = np.random.randn(2, x.size, self.num_shots)
@@ -30,10 +25,10 @@ class MockCam(Cam):
         signal = lines[:1, :]
         time.sleep(self.num_shots*1e-3)
         #self.num_reads += 1
-        deferred_call(setattr, self, 'reading', False)
         last_read = CamRead(lines=lines,
                 reading=self.num_reads, std=std, sig=signal)
         deferred_call(setattr, self, 'last_read', last_read)
+        deferred_call(setattr, self, 'reading', False)
         return last_read
 
 class TuneableMockCam(TuneableCam):
@@ -121,5 +116,5 @@ class MockDelayLine(DelayLine):
 class PulsShaper(Device):
     grating_1 = Typed(RotationStage, kwargs=dict(name='grating_1'))
     grating_2 = Typed(RotationStage, kwargs=dict(name='grating_2'))
-    
+
 

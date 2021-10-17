@@ -1,6 +1,4 @@
 /.mypy_cache
 /.vscode
-__enamlcache__
-__pycache__
-*.enamlc
-
+**/*.pyc
+**/*.enamlc
