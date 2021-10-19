@@ -17,12 +17,12 @@ class MockCam(Cam):
     def read_cam(self) -> None:
         #print('read')
         x = np.arange(128)
-        data = np.random.randn(2, x.size, self.num_shots)
+        data = np.random.randn(self.num_shots, x.size, 2)
         y = 1/(1+((x-200)/50)**2)
         data += y[None, :, None]
-        lines = data.mean(-1)
-        std = data.std(-1)
-        signal = lines[:1, :]
+        lines = data.mean(0)
+        std = data.std(0)
+        signal = lines[:, :1]
         time.sleep(self.num_shots*1e-3)
         #self.num_reads += 1
         last_read = CamRead(lines=lines,
@@ -37,10 +37,11 @@ class TuneableMockCam(TuneableCam):
     lines = set_default(['probe', 'ref'])
     std_lines = set_default(['probe', 'ref'])
     sig_lines = set_default(['probe'])
-    freqs = set_default(np.arange(400))
+
     reading = set_default(False)
     current_wl = set_default(500)
-    _wl = Float(300)
+    freqs = set_default((np.arange(400)-200)+500)
+    _wl = Float(500)
 
     def start_read(self):
         import threading
@@ -49,16 +50,14 @@ class TuneableMockCam(TuneableCam):
         t.start()
 
     def read_cam(self) -> CamRead:
-        #print('read')
-        x = np.arange(400)
-        data = np.random.randn(2, x.size, self.num_shots)
-        y = 1/(1+((x-200)/50)**2)
+        x = self.freqs
+        data = np.random.randn(self.num_shots, x.size, 2)
+        y = 1/(1+((x-300)/50)**2)
         data += y[None, :, None]
-        lines = data.mean(-1)
-        std = data.std(-1)
-        signal = lines[:1, :]
+        lines = data.mean(0)
+        std = data.std(0)
+        signal = lines[:, :1]
         time.sleep(self.num_shots*1e-3)
-        #self.num_reads += 1
         deferred_call(setattr, self, 'reading', False)
         last_read = CamRead(lines=lines,
                 reading=self.num_reads, std=std, sig=signal)
@@ -69,48 +68,47 @@ class TuneableMockCam(TuneableCam):
         self.state = 'moving'
         def cb():
             self.current_wl = pos
+            self.freqs = (np.arange(400)-200) + self.current_wl
             self.state = 'idle'
-        timed_call(1000, cb)
+        timed_call(100, cb)
 
 
 
 ps_per_second = 2
 
 class MockDelayLine(DelayLine):
-    name = set_default('MockDelayLine')
+    name : str = set_default('MockDelayLine')
     fs_pos = Float(0)
-    target_pos = Float()
-    cur_pos = Float()
-    last_call_time = Float()
+    _target_pos = Float()
+    _cur_pos = Float()
+    _last_call_time = Float()
     moving = Bool()
-    state = set_default('idle')
+    state : str = set_default('idle')
 
     def set_pos_fs(self, pos: float):
-        self.target_pos = pos
-        self.moving = True
-        self.state = 'busy'
-        self.last_call_time = time.time()
+        self._target_pos = pos
+        self.state = 'moving'
+        self._last_call_time = time.time()
 
     def get_pos_fs(self) -> float:
-        if self.moving:
-            dt = time.time()-self.last_call_time
-            ds = self.target_pos - self.cur_pos
+        if self.state == 'moving':
+            dt = time.time()-self._last_call_time
+            ds = self._target_pos - self._cur_pos
             new_pos = dt*ps_per_second*1000.
             if abs(new_pos / ds) > 1:
-                self.moving = False
                 self.state = 'idle'
-                self.cur_pos = self.target_pos
-                return self.target_pos
+                self._cur_pos = self._target_pos
+                return self._target_pos
             else:
-                return dt*ps_per_second*1000.*np.sign(ds)+self.cur_pos
+                return dt*ps_per_second*1000.*np.sign(ds)+self._cur_pos
         else:
-            return self.cur_pos
+            return self._cur_pos
 
     def is_moving(self):
-        return self.moving
+        return self.state == 'moving'
 
     def get_pos(self) -> float:
-        return self.position
+        return self.get_pos_fs()*1e-15*3e8/1000/2
 
 
 class PulsShaper(Device):

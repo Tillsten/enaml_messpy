@@ -1,28 +1,24 @@
-from enaml.widgets.api import (MainWindow, ToolBar, PushButton, DockArea,
-         DockItem, GroupBox, Timer, Container)
-from enaml.layout.api import hbox, vbox, align
+from enaml.widgets.api import (MainWindow, ToolBar, PushButton, DockArea, Action,
+         DockItem, GroupBox, Timer, Container, VGroup, ActionGroup)
+from enaml.layout.api import hbox, vbox, align, spacer
 from enaml.layout.dock_layout import VSplitLayout, HSplitLayout
 from enaml.core.api import Looper, Conditional
 from enaml.application import deferred_call, timed_call
 from enaml.icon import Icon
-
 import pyqtgraph as pg
-
 import enamlx
 enamlx.install()
 
-#import numpy as np
-#from Plans.PumpProbeView import PumpProbeSettingsView
+import numpy as np
 
+from Plans.ScanSpectrum import ScanSpectrumSettings, ScanSpectrum
+from Plans.ScanSpectrumView import ScanSpectrumSettingsView, ScanSpectrumView
 from qtawesome import icon as qicon
 from Instruments.interfaces import TuneableCam
 
-#from Views.CameraControl import CameraControl, SpecControl
-#from Views.DelayLineControl import DelayLineControl
-#from Views.CamPlotter import CamPlotter
-
 from Views import CamPlotter, DelayLineControl, CameraControl, SpecControl
 from Views.MyStyle import MesspyStyle
+
 
 enamldef MessPy3(MainWindow):
     title = 'MessPy3'
@@ -30,14 +26,50 @@ enamldef MessPy3(MainWindow):
     #MesspyStyle:
     #    pass
     ToolBar:
-        PushButton:
-            text = "Pump-probe"
-            icon = Icon(_tkdata=qicon('fa.folder-open', color='teal'))
-        PushButton:
-            text = "Calibration"
-            icon = Icon(_tkdata=qicon('fa5s.ruler', color='teal'))
+        movable = False
+        floatable = False
+        button_style = 'text_under_icon'
+        ActionGroup:
+            enabled << not app.current_plan is None
+            Action:
+                text = 'Pause'
+                icon = Icon(_tkdata=qicon('fa.pause', color='teal'))
+                checkable = True
+                checked << (app.state == 'paused')
+                toggled ::
+                    if app.state == 'paused':
+                        app.state = 'running'
+                    elif app.state == 'running':
+                        app.state = 'paused'
+            Action:
+                text = 'Stop'
+                icon = Icon(_tkdata=qicon('fa.stop', color='teal'))
+                toggled :: app.stop_plan()
+        Action:
+            separator = True
+        ActionGroup:
+            Action:
+                text = "Pump-probe"
+                icon = Icon(_tkdata=qicon('fa.folder-open', color='teal'))
+            Action:
+                text = "Scan-spectrum"
+                icon = Icon(_tkdata=qicon('fa5s.chart-area', color='teal'))
+                triggered ::
+                    settings = ScanSpectrumSettings()
+                    view = ScanSpectrumSettingsView(model=settings)
+                    accepted = view.exec_()
+                    if accepted:
+                        ss = ScanSpectrum(settings=settings,
+                                        tuneable_cam=app.cams[0],
+                                        )
+                        sv = ScanSpectrumView(model=ss)
+                        sv.show()
+                        app.start_plan(ss)
+            Action:
+                text = "Calibration"
+                icon = Icon(_tkdata=qicon('fa5s.ruler', color='teal'))
     Container:
-        constraints = [hbox(da, menu), (da.width >= 300) | 'weak', menu.width <= 800]
+        constraints = [hbox(da, menu), (da.width >= 500) | 'weak']
         padding = 0
         DockArea: da:
             style = ''
@@ -51,12 +83,11 @@ enamldef MessPy3(MainWindow):
                     stretch = 1
                     CamPlotter:
                         cam << loop.item
-        Container: menu:
-            constraints << [vbox(*self.visible_widgets()),
-                            align('width', *self.visible_widgets()),
-                            cc.width == 500]
+        VGroup: menu:
+            #constraints << [vbox(*self.visible_widgets()),
+            #                align('width', *self.visible_widgets()),]
             hug_width = 'strong'
-
+            trailing_spacer << spacer(0)
             GroupBox: cc:
                 title = 'Camera'
                 CameraControl:
@@ -75,11 +106,7 @@ enamldef MessPy3(MainWindow):
                     delay_line << app.delay_line
 
     func read_cam():
-
-        for c in app.cams:
-            if not c.reading:
-                deferred_call(c.start_read)
-
+        app.loop()
 
     Timer: cam_runner:
         interval = 10

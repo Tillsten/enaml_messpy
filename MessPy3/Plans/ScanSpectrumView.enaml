@@ -1,0 +1,107 @@
+from enaml.widgets.api import *
+from enaml.layout.api import *
+from enaml.stdlib.fields import IntField, FloatField
+
+from Views.CustomWidgets import FreqView
+import atom.api as a
+from enaml.core.api import Looper, Conditional
+from enaml.icon import Icon
+from EnamlModel import SampleInfo
+si = SampleInfo()
+import numpy as np
+from qtawesome import icon as qicon
+from qtpy.QtCore import Qt
+from PlotWidget import Plotter, Line
+
+enamldef ScanSpectrumSettingsView(Dialog): dia:
+    title = "Mono-Scan Spectrum"
+    icon = Icon(_tkdata=qicon('fa5s.chart-area', color='teal'))
+    attr model
+
+    activated  ::
+        self.proxy.widget.setWindowFlags(Qt.Window)
+        self.proxy.widget.setWindowFlags(Qt.FramelessWindowHint)
+
+    #Container:
+    #    CheckBox: si_enabled:
+    #        text = 'Sample info'
+    #        checked := siv.enabled
+    #    SampleInfoView: siv:
+    #        sample_info = model.si
+
+    Container:
+        padding = 10
+        maximum_size = (900, 300)
+        Container:
+            constraints << [hbox(lbl, spacer(0), pb)]
+            Label: lbl:
+                text << '<h3>%s'%dia.title
+            PushButton: pb:
+                maximum_size = (30, 30)
+                maximum_size = (30, 30)
+                icon = Icon(_tkdata=qicon('fa5s.times', color='teal'))
+                clicked :: dia.close()
+                hug_width = 'ignore'
+                #resist_width = 'ignore'
+
+        FreqView: wl_min:
+            title = 'Start Wavelength'
+            wl := model.wl_min
+        FreqView: wl_max:
+            title = 'End Wavelength'
+            wl := model.wl_max
+        Form: frm:
+
+            Label:
+                text = "Linear in"
+            Form:
+                RadioButton: rb_nm:
+                    text = 'nm'
+                    checked = model.linear_in == 'wl'
+                    checked ::
+                        model.linear_in = 'wl'
+                RadioButton: rb_cm:
+                    text = 'cm-1'
+                    checked = model.linear_in == 'wn'
+                    checked ::
+                        model.linear_in = 'wn'
+            Label:
+                text = 'Steps'
+            FloatField: steps:
+               value := model.step
+            Label:
+                text = 'Shots'
+            IntField:
+                value := model.shots
+            Label:
+                text = "Filename"
+            Field:
+                text := model.filename
+            HGroup:
+                leading_spacer = spacer(0)
+                PushButton:
+                    text = 'Ok'
+                    clicked :: dia.accept()
+                PushButton:
+                    text = 'Cancel'
+                    clicked :: dia.reject()
+
+enamldef ScanSpectrumView(Window) : win:
+    attr model
+    modality = 'non_modal'
+    visible = True
+    Container:
+        Plotter:
+            Looper:
+                iterable = model.tuneable_cam.lines
+                Line:
+                    attr event << model.new_point
+                    x = 0
+                    y = 0
+
+                    func update(x=None):
+                        y = model.cwl_data[loop_item]
+                        x = model.points[:len(y)]
+                        self.set_data(x=x, y=y)
+                    initialized :: model.new_point.bind(self.update)
+                    

@@ -53,8 +53,10 @@ enamldef DelayLineControl(Form):
             Looper: looper:
                 iterable = [-100, -1000, -10000]
                 PushButton:
-                    constraints = [width == 100]
+                    constraints = [width <= 100]
                     attr labels = '-100 -1k -10k'.split()
+                    hug_width = 'ignore'
+                    resist_width = 'ignore'
                     text = labels[loop.index]
                     clicked :: setattr(field, 'value', read_pos+float(loop.item))
         HGroup: pre2:
@@ -62,7 +64,9 @@ enamldef DelayLineControl(Form):
             Looper: looper2:
                 iterable = [100, 1000, 10000]
                 PushButton:
-                    constraints = [width == 100]
+                    constraints = [width <= 100]
+                    hug_width = 'ignore'
+                    resist_width = 'ignore'
                     attr labels = '100 1k 10k'.split()
                     text = labels[loop.index]
                     clicked :: setattr(field, 'value', read_pos+float(loop.item))

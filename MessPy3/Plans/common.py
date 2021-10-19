@@ -1,4 +1,4 @@
-from AppModel import HardwareManager
+#from AppModel import HardwareManager
 import atom.api as a
 from atom.scalars import Str
 
@@ -11,6 +11,7 @@ class Meta(a.Atom):
     operator = a.Str('')
     name = a.Str(strict=True)
     annotations = a.Str()
+    filename = a.Str()
 
 class SampleInfo(a.Atom):
     sample_name = a.Str('')
@@ -36,16 +37,18 @@ class SetupInfo(a.Atom):
 class Plan(Meta):
     required_instruments = a.List(type)
     optional_instruments = a.List(type)
-    finnished = a.Event()
+
     stop_next = a.Bool(False)
 
     setup_finnished = a.Event()
     plan_finnished = a.Event()
+    stopped = a.Event()
+    paused = a.Event()
 
-    def check_instruments(self, hw: HardwareManager):
-        for i in self.required_instruments:
-            if i not in hw.instruments:
-                raise ValueError('Plan requieres %s'%i)
+    #def check_instruments(self, hw: HardwareManager):
+    #    for i in self.required_instruments:
+    #        if i not in hw.instruments:
+    #            raise ValueError('Plan requieres %s'%i)
 
 
 

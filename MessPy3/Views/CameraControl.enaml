@@ -70,9 +70,9 @@ enamldef SpecControl(Container):
         Looper:
             iterable = [-50, -25, 25, 50]
             PushButton:
-                constraints << [width <= 60.0|'weak']
+                constraints << [(width <= 50.0)|'weak']
                 hug_width = 'ignore'
-                #resists_
+                resist_width  = 'ignore'
                 text = "%d"%loop_item
                 clicked ::
                     if pb1.checked:

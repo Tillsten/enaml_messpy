@@ -13,8 +13,8 @@ seabborn_colors = seaborn.color_palette('bright')[1:]
 
 class Line(Declarative):
     __slots__ = ('__weakrefs__')
-    x = d_(a.Typed(np.ndarray, args=([1,2,3])))
-    y = d_(a.Typed(np.ndarray, args=([1,2,3])))
+    x = d_(a.Value([1,2,3]))
+    y = d_(a.Value([1,2,3]))
 
     color = d_(a.Value('r'))
     width = d_(a.Float(1.))
@@ -39,18 +39,22 @@ class Line(Declarative):
 
     #@a.observe('x', 'y')
     def set_data(self, x, y):
-        self.line.setData(y=self.y, x=self.x, antialais=True)
+        self.x = np.array(x)
+        self.y = np.array(y)
+        self.line.setData(y=self.y, x=self.x)
         self.data_changed = True
 
 class Plotter(RawWidget):
     __slots__ = ('__weakrefs__')
     widget = a.Value()
 
+
     hug_width = a.set_default('ignore')
     hug_height = a.set_default('ignore')
 
     has_new_data: bool = a.Bool()
     color_cycle: list = a.List()
+    #minimum_size = (10000, 1000)
 
     grid = d_(Enum('y', 'x', 'both', 'none'))
 
@@ -59,8 +63,8 @@ class Plotter(RawWidget):
         return seabborn_colors
 
     def create_widget(self, parent):
-        print('creater')
         self.widget = PlotWidget(parent=parent)
+
         self.set_grid()
         for i, child in enumerate(self.children):
             if isinstance(child, Line):

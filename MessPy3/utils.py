@@ -20,3 +20,24 @@ def THz2cm(nu):
 def cm2THz(cm):
     return c / (cm * 1e10)
 
+import numba as nb
+
+@nb.jit
+def inline_stats(arr):
+    asum = 0
+    asquared = 0
+    amin = arr[0]
+    amax = arr[0]
+
+    for i in arr:
+        asum += i
+        asquared += i*i
+        if i > amax:
+            amax = i
+        elif i < amin:
+            amin = i
+
+    mean = asum/arr.size
+    std = (asquared - asum*asum/arr.size)/arr.size
+    return asum, mean, std, amin, amax
+

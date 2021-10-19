@@ -38,7 +38,7 @@ enamldef FreqView(GroupBox):
         text = 'nm'
     FloatField: wl_field:
         converter  = lambda x: '%.1f'%x
-        minimum = 100
+        minimum = 100.0
         value << parent.wl
         value ::
             parent.wl = value

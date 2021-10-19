@@ -15,10 +15,10 @@ enamldef CamPlotter(Container):
             Line:
                 attr last_read << cam.last_read
                 initialized :: last_read
-                y  = last_read.lines[loop.index]
+                y  = last_read.lines[:,loop.index]
                 func update_d():
                     self.x = cam.freqs
-                    self.y = last_read.lines[loop.index]
+                    self.y = last_read.lines[:, loop.index]
                     self.set_data(x=self.x, y=self.y)
                 last_read ::
                     update_d()
@@ -29,10 +29,10 @@ enamldef CamPlotter(Container):
             Line:
                 attr last_read << cam.last_read
                 initialized :: last_read
-                y = last_read.std[loop.index]
+                y = last_read.std[:, loop.index]
                 func update_d():
                     self.x = cam.freqs
-                    self.y = last_read.std[loop.index]
+                    self.y = last_read.std[:, loop.index]
                     self.set_data(x=self.x, y=self.y)
                 last_read ::
                     update_d()
@@ -45,7 +45,7 @@ enamldef CamPlotter(Container):
                 initialized :: last_read
                 func update_d():
                     self.x = cam.freqs
-                    self.y = last_read.sig[loop.index]
+                    self.y = last_read.sig[:, loop.index]
                     self.set_data(x=self.x, y=self.y)
                 last_read ::
                     update_d()
