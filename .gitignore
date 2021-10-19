@@ -3,4 +3,5 @@
 /.vscode
 *.pyc
 /.idea
+/MessPy3/config
 

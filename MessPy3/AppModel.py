@@ -29,10 +29,11 @@ class AppState(a.Atom):
     is_not_stopping = False
 
     def stop_plan(self, change=None):
-        self.state == 'stopping'
+        self.state = 'stopping'
         self.current_plan.stop_next = True
+        self.current_plan.stopped = True
         self.current_plan = None
-
+        self.state = 'no_plan'
 
     @observe('state')
     def handle_pause(self, change):

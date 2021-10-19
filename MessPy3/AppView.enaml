@@ -30,7 +30,7 @@ enamldef MessPy3(MainWindow):
         floatable = False
         button_style = 'text_under_icon'
         ActionGroup:
-            enabled << not app.current_plan is None
+            enabled << not (app.current_plan is None)
             Action:
                 text = 'Pause'
                 icon = Icon(_tkdata=qicon('fa.pause', color='teal'))
@@ -44,7 +44,7 @@ enamldef MessPy3(MainWindow):
             Action:
                 text = 'Stop'
                 icon = Icon(_tkdata=qicon('fa.stop', color='teal'))
-                toggled :: app.stop_plan()
+                triggered :: app.stop_plan()
         Action:
             separator = True
         ActionGroup:
@@ -107,10 +107,11 @@ enamldef MessPy3(MainWindow):
 
     func read_cam():
         app.loop()
+        cam_runner.start()
 
     Timer: cam_runner:
         interval = 10
-        single_shot = False
+        single_shot = True
         timeout :: read_cam()
 
     activated :: cam_runner.start()

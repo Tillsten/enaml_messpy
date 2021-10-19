@@ -88,20 +88,31 @@ enamldef ScanSpectrumSettingsView(Dialog): dia:
 
 enamldef ScanSpectrumView(Window) : win:
     attr model
+    attr callbacks = []
+
     modality = 'non_modal'
-    visible = True
     Container:
         Plotter:
             Looper:
                 iterable = model.tuneable_cam.lines
                 Line:
-                    attr event << model.new_point
+
                     x = 0
                     y = 0
 
                     func update(x=None):
+                        print(x)
+                        if self.is_destroyed:
+                            print('called')
+                            return
                         y = model.cwl_data[loop_item]
                         x = model.points[:len(y)]
                         self.set_data(x=x, y=y)
-                    initialized :: model.new_point.bind(self.update)
-                    
+                    initialized ::
+                        model.observe('new_point', self.update)
+                        #callbacks.append(lambda: model.unobserve('new_point', self.update))
+
+    closing  ::
+        print(callbacks, model)
+        for f in callbacks:
+            f()
