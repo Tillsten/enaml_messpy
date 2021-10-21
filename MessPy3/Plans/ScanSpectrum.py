@@ -23,24 +23,15 @@ class ScanSpectrum(Plan):
     reads = List()
     step = Value()
     initial_values = Dict()
-    new_point = Event()
+    new_point = Int(0)
 
-    @observe("stopped")
-    def on_stopped(self, change):
+    @observe("stopped", 'plan_finnished')
+    def on_stopped(self, change=None):
         self.tuneable_cam.set_wavelength(self.initial_values['wl'])
         self.tuneable_cam.num_shots = self.initial_values['shots']
 
     def _default_cwl_data(self):
         return {i: list() for i in self.tuneable_cam.lines}
-
-    def _default_step(self):
-        return self.steps().__next__
-
-    def _default_initial_values(self):
-        return dict(
-            wl=self.tuneable_cam.current_wl,
-            shots=self.tuneable_cam.num_shots
-        )
 
     def _default_points(self):
         s = self.settings
@@ -49,12 +40,19 @@ class ScanSpectrum(Plan):
         if s.linear_in == 'wn':
             return np.arange(1e7 / s.wl_max + 1e-6, 1e7 / s.wl_min, s.step)
 
+    def _default_step(self):
+        return self.steps().__next__
+
     def steps(self):
-        print('step')
+
+        self.initial_values = dict(
+            wl=self.tuneable_cam.current_wl,
+            shots=self.tuneable_cam.num_shots
+        )
         cam = self.tuneable_cam
         cam.num_shots = self.settings.shots
         for p in self.points:
-            print('step2')
+
             self.tuneable_cam.set_wavelength(p)
             while self.tuneable_cam.state == 'moving':
                 yield
@@ -66,6 +64,6 @@ class ScanSpectrum(Plan):
             for i, line in enumerate(cam.lines):
                 cwl = cam.pixel // 2
                 self.cwl_data[line].append(reading.lines[cwl, i])
-            self.new_point = 1
+            self.new_point += 1
             yield
         self.plan_finnished = True

@@ -4,6 +4,9 @@ from enaml.layout.api import *
 from enaml.styling import (
       StyleSheet, Style, Setter
 )
+from enaml.core.api import Include
+from enaml.icon import Icon
+from qtawesome import icon as qicon
 
 enamldef StateLabel(Label):
     attr dev_state
@@ -49,3 +52,69 @@ enamldef FreqView(GroupBox):
         value << 1e7/max(parent.wl, 1)
         value ::
             parent.wl = 1e7/max(parent.wl, 1)
+
+from qtpy.QtCore import Qt
+template SettingsDialog(Content):
+    Dialog: dia:
+        title = "Mono-Scan Spectrum"
+        icon = Icon(_tkdata=qicon('fa5s.chart-area', color='teal'))
+
+        alias content
+
+        minimum_size = (900, 300)
+        activated  ::
+            self.proxy.widget.setWindowFlags(Qt.Window)
+            self.proxy.widget.setWindowFlags(Qt.FramelessWindowHint)
+        Container:
+            Container:
+                padding = 10
+                maximum_size = (900, 300)
+                constraints << [hbox(lbl, spacer(0), pb)]
+                Label: lbl:
+                    text << '<h3>%s'%dia.title
+                PushButton: pb:
+                    maximum_size = (30, 30)
+                    maximum_size = (30, 30)
+                    icon = Icon(_tkdata=qicon('fa5s.times', color='teal'))
+                    clicked :: dia.close()
+                    hug_width = 'ignore'
+                    #resist_width = 'ignore'
+
+            Content: content:
+                pass
+
+            HGroup:
+                leading_spacer = spacer(0)
+                PushButton:
+                    text = 'Ok'
+                    clicked :: dia.accept()
+                PushButton:
+                    text = 'Cancel'
+                    clicked :: dia.reject()
+
+
+
+
+template TestWindow(Content):
+    MainWindow: mw:
+        attr model
+        VGroup:
+        #alias model : content.model
+            Label:
+                text = "bla"
+            PushButton:
+                text = "click"
+                clicked ::
+                    print(mw.model)
+                    view = Content(model=mw.model)
+                    print(view)
+                    view.show()
+                    sd = SettingsDialog(Content)(None)
+                    print(sd[0])
+                    sd[0].content.model = mw.model
+                    sd[0].show()
+
+            PushButton:
+                text = "click2"
+                clicked ::
+                    Dialog().exec_()

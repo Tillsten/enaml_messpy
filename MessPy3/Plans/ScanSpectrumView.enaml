@@ -10,17 +10,8 @@ from EnamlModel import SampleInfo
 si = SampleInfo()
 import numpy as np
 from qtawesome import icon as qicon
-from qtpy.QtCore import Qt
+
 from PlotWidget import Plotter, Line
-
-enamldef ScanSpectrumSettingsView(Dialog): dia:
-    title = "Mono-Scan Spectrum"
-    icon = Icon(_tkdata=qicon('fa5s.chart-area', color='teal'))
-    attr model
-
-    activated  ::
-        self.proxy.widget.setWindowFlags(Qt.Window)
-        self.proxy.widget.setWindowFlags(Qt.FramelessWindowHint)
 
     #Container:
     #    CheckBox: si_enabled:
@@ -29,90 +20,67 @@ enamldef ScanSpectrumSettingsView(Dialog): dia:
     #    SampleInfoView: siv:
     #        sample_info = model.si
 
-    Container:
-        padding = 10
-        maximum_size = (900, 300)
-        Container:
-            constraints << [hbox(lbl, spacer(0), pb)]
-            Label: lbl:
-                text << '<h3>%s'%dia.title
-            PushButton: pb:
-                maximum_size = (30, 30)
-                maximum_size = (30, 30)
-                icon = Icon(_tkdata=qicon('fa5s.times', color='teal'))
-                clicked :: dia.close()
-                hug_width = 'ignore'
-                #resist_width = 'ignore'
+enamldef ScanSpectrumSettingsView(Container):
+    attr model
 
-        FreqView: wl_min:
-            title = 'Start Wavelength'
-            wl := model.wl_min
-        FreqView: wl_max:
-            title = 'End Wavelength'
-            wl := model.wl_max
-        Form: frm:
 
-            Label:
-                text = "Linear in"
-            Form:
-                RadioButton: rb_nm:
-                    text = 'nm'
-                    checked = model.linear_in == 'wl'
-                    checked ::
-                        model.linear_in = 'wl'
-                RadioButton: rb_cm:
-                    text = 'cm-1'
-                    checked = model.linear_in == 'wn'
-                    checked ::
-                        model.linear_in = 'wn'
-            Label:
-                text = 'Steps'
-            FloatField: steps:
-               value := model.step
-            Label:
-                text = 'Shots'
-            IntField:
-                value := model.shots
-            Label:
-                text = "Filename"
-            Field:
-                text := model.filename
-            HGroup:
-                leading_spacer = spacer(0)
-                PushButton:
-                    text = 'Ok'
-                    clicked :: dia.accept()
-                PushButton:
-                    text = 'Cancel'
-                    clicked :: dia.reject()
+    FreqView: wl_min:
+        title = 'Start Wavelength'
+        wl := model.wl_min
+    FreqView: wl_max:
+        title = 'End Wavelength'
+        wl := model.wl_max
+    Form: frm:
+
+        Label:
+            text = "Linear in"
+        Form:
+            RadioButton: rb_nm:
+                text = 'nm'
+                checked = model.linear_in == 'wl'
+                checked ::
+                    model.linear_in = 'wl'
+            RadioButton: rb_cm:
+                text = 'cm-1'
+                checked = model.linear_in == 'wn'
+                checked ::
+                    model.linear_in = 'wn'
+        Label:
+            text = 'Steps'
+        FloatField: steps:
+            value := model.step
+        Label:
+            text = 'Shots'
+        IntField:
+            value := model.shots
+        Label:
+            text = "Filename"
+        Field:
+            text := model.filename
+
 
 enamldef ScanSpectrumView(Window) : win:
     attr model
     attr callbacks = []
 
     modality = 'non_modal'
+    title = 'Scan Spectrum'
+    icon = Icon(_tkdata=qicon('fa5s.chart-area', color='teal'))
+
     Container:
         Plotter:
             Looper:
                 iterable = model.tuneable_cam.lines
                 Line:
-
+                    attr event << win.model.new_point
                     x = 0
                     y = 0
 
-                    func update(x=None):
-                        print(x)
-                        if self.is_destroyed:
-                            print('called')
-                            return
+                    func update_data(x=None):
                         y = model.cwl_data[loop_item]
                         x = model.points[:len(y)]
                         self.set_data(x=x, y=y)
-                    initialized ::
-                        model.observe('new_point', self.update)
-                        #callbacks.append(lambda: model.unobserve('new_point', self.update))
-
-    closing  ::
-        print(callbacks, model)
-        for f in callbacks:
-            f()
+                    initialized :: event
+                    event :: update_data()
+        Label:
+            text << 'Point %d/%d' % (model.new_point, len(model.points))

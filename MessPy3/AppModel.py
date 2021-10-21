@@ -31,7 +31,7 @@ class AppState(a.Atom):
     def stop_plan(self, change=None):
         self.state = 'stopping'
         self.current_plan.stop_next = True
-        self.current_plan.stopped = True
+        self.current_plan.stopped = 1
         self.current_plan = None
         self.state = 'no_plan'
 
@@ -50,15 +50,18 @@ class AppState(a.Atom):
         plan.plan_finnished.bind(lambda x: setattr(self, 'state', 'finished'))
 
     def loop(self):
-        if self.state in ['running', 'stopping']:
+
+        reading = any([c.reading for c in self.cams])
+        if reading:
+            return
+        elif self.state in ['running', 'stopping']:
             try:
                 self.current_plan.step()
             except StopIteration:
                 self.state = 'finished'
-        elif self.state in ['paused', 'no_plan']:
+        elif self.state in ['paused', 'no_plan', 'finished']:
             for c in self.cams:
-                if not c.reading:
-                    c.start_read()
+                c.start_read()
 
 
 
