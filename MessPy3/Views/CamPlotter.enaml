@@ -3,6 +3,10 @@ from enaml.core.api import Looper
 from enaml.widgets.api import Container
 from enaml.layout.api import vbox
 
+
+enamldef PlotterControl(Container):
+    pass
+
 enamldef CamPlotter(Container):
     attr cam
     constraints << [vbox(pi1, pi2, pi3, spacing=0),

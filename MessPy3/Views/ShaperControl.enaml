@@ -1,0 +1,76 @@
+
+from enaml.widgets.api import *
+from enaml.layout.api import *
+from enaml.stdlib.fields import *
+from enaml.core. api import *
+
+from Views.CustomWidgets import *
+from Views.CommonViews import *
+
+
+
+
+enamldef GVDControl(Container):
+    constraints << [vbox(hbox(lbl_wl, wl),
+                         hbox(lbl_gvd, gvd, gvd_f),
+                         hbox(lbl_tod, tod, tod_f),
+                         hbox(lbl_fod, fod, fod_f)),
+                    gvd_f.width <= 50,
+                    align('left', gvd_f, tod_f, fod_f),
+                    align('right', gvd_f, tod_f, fod_f)]
+    Label: lbl_wl:
+        text = 'Central Wavelength'
+    FloatField: wl:
+        text_align = 'center'
+    Label: lbl_gvd:
+        text = 'GVD'
+    Slider: gvd:
+        minimum = -300
+        maximum = 300            
+    Field: gvd_f:
+        hug_width = 'ignore'
+        text << "%dk"%gvd.value
+    Label: lbl_tod:
+        text = 'TOD'
+    Slider: tod:
+        minimum = -1000
+        maximum = 1000
+        single_step = 10
+        tick_interval = 100
+    Field: tod_f:
+        hug_width = 'ignore'
+        text << "%dk"%tod.value
+    Label: lbl_fod:
+        text = 'FOD'
+    Slider: fod:
+        minimum = -100
+        maximum = 100
+        single_step = 10
+        tick_interval = 100
+    Field: fod_f:        
+        hug_width = 'ignore'
+        text << "%dM"%fod.value
+
+enamldef ShaperControl(Container):    
+    Form:
+        Label: 
+            text = 'Power'
+        Slider:
+            minimum = 0
+            maximum = 100
+            value << (amp_sl.value**2)//100
+        Label: 
+            text = 'Amplitude'
+        Slider: amp_sl:
+            minimum = 0
+            maximum = 100
+        Label:
+            text = 'Chopped'
+        CheckBox: cb_chopped:
+            pass
+        Label:
+            text = 'Phase Cycling'
+        CheckBox: cb_chopped:
+            pass
+    GVDControl:
+        pass

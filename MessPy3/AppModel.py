@@ -50,7 +50,6 @@ class AppState(a.Atom):
         plan.plan_finnished.bind(lambda x: setattr(self, 'state', 'finished'))
 
     def loop(self):
-
         reading = any([c.reading for c in self.cams])
         if reading:
             return
@@ -62,8 +61,6 @@ class AppState(a.Atom):
         elif self.state in ['paused', 'no_plan', 'finished']:
             for c in self.cams:
                 c.start_read()
-
-
 
 if __name__ == '__main__':
 

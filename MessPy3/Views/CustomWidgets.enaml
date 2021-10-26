@@ -61,7 +61,7 @@ template SettingsDialog(Content):
 
         alias content
 
-        minimum_size = (900, 300)
+
         activated  ::
             self.proxy.widget.setWindowFlags(Qt.Window)
             self.proxy.widget.setWindowFlags(Qt.FramelessWindowHint)
@@ -94,6 +94,15 @@ template SettingsDialog(Content):
 
 
 
+import asyncio as aio
+import qasync
+
+async def test():
+    while True:
+        print('bla')
+        await aio.sleep(1)
+
+    return 5
 
 template TestWindow(Content):
     MainWindow: mw:
@@ -117,4 +126,5 @@ template TestWindow(Content):
             PushButton:
                 text = "click2"
                 clicked ::
-                    Dialog().exec_()
+
+                    a =  aio.create_task(test())

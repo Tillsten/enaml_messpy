@@ -28,11 +28,11 @@ from enaml.application import Application
 
 MODEL_TEXT = """
 from atom.api import *
-from Plans.ScanSpectrum import *
+from Plans.PumpProbe import *
 from Plans.common import *
 
 
-class DemoModel(Atom):
+class DemoModel(PumpProbeSettings):
     pass
 
 """
@@ -46,6 +46,7 @@ from enaml.core. api import *
 
 from Views.CustomWidgets import *
 from Views.CommonViews import *
+
 
 enamldef DemoContainer(Container):
     pass

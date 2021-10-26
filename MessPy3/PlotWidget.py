@@ -21,6 +21,7 @@ class Line(Declarative):
     antialiased = d_(a.Bool(True))
 
     line : PlotDataItem = d_(a.Typed(PlotDataItem, args=([])))
+    name : str = d_(a.Str())
 
     data_changed = a.Event()
     pen = a.Value()
@@ -62,16 +63,34 @@ class Plotter(RawWidget):
     def _default_color_cycle(self):
         return seabborn_colors
 
+    def names(self):
+        return [l.name for l in self.children]
+
     def create_widget(self, parent):
         self.widget = PlotWidget(parent=parent)
-
         self.set_grid()
         for i, child in enumerate(self.children):
             if isinstance(child, Line):
                 self.widget.addItem(child.line)
                 child.color = self.color_cycle[i % len(self.color_cycle)]
                 child.data_changed.bind(self.update_data)
+
         return self.widget
+
+    def child_added(self, child):
+        super().child_added(child)        
+        if isinstance(child, Line) and self.is_initialized:
+            self.widget.addItem(child.line)
+            child.color = self.color_cycle[i % len(self.color_cycle)]
+            child.data_changed.bind(self.update_data)
+        return
+
+    def child_removed(self, child):
+        super().child_removed(child)
+        if isinstance(child, Line): 
+            self.widget.removeItem(child.line)
+            child.data_changed.unbind(self.update_data)
+        return 
 
     @observe('grid')
     def set_grid(self, changes=None):

@@ -8,7 +8,7 @@ from enaml.stdlib.fields import IntField, FloatField
 from enaml.core.api import Looper, Conditional
 import atom.api as a
 
-from .CommonViews import MetaView, FocusView, SetupInfoView, SampleInfoView
+from Views.CommonViews import MetaView, FocusView, SetupInfoView, SampleInfoView
 
 class DelayPointsSettings(a.Atom):
     start = a.Float()
@@ -65,16 +65,16 @@ enamldef TimePointSelector(Container):
                 text = "<h1>Hallo</h1>"
 
 
-enamldef PumpProbeSettingsView(Container):
+enamldef PumpProbeSettingsView(Container): view:
     attr pp
     constraints << [vbox(*children), width <= 500]
     padding = 0
     GroupBox:
         title = "Experiment"
         MetaView: mv:
-            meta = parent.pp
+            meta = view.pp
         SetupInfoView: setup_iv:
-            si = pp.setup_info
+            si = view.pp.setup_info
         SampleInfoView: siv:
             sample_info = pp.sample_info
     TimePointSelector:
