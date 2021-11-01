@@ -2,75 +2,125 @@
 from enaml.widgets.api import *
 from enaml.layout.api import *
 from enaml.stdlib.fields import *
+from enaml.stdlib.slider_transform import FloatTransform
 from enaml.core. api import *
 
 from Views.CustomWidgets import *
 from Views.CommonViews import *
 
-
-
-
-enamldef GVDControl(Container):
+enamldef GVDControl(Container): r:
+    attr model
     constraints << [vbox(hbox(lbl_wl, wl),
                          hbox(lbl_gvd, gvd, gvd_f),
                          hbox(lbl_tod, tod, tod_f),
-                         hbox(lbl_fod, fod, fod_f)),
+                         hbox(lbl_fod, fod, fod_f),
+                         spacing=20),
                     gvd_f.width <= 50,
+                    wl.width <= 100,
                     align('left', gvd_f, tod_f, fod_f),
-                    align('right', gvd_f, tod_f, fod_f)]
+                    align('right', gvd_f, tod_f, fod_f),
+                    align('width', gvd, tod, fod),
+                    ]
     Label: lbl_wl:
-        text = 'Central Wavelength'
+        text = 'Central Wavelength (nm)'
     FloatField: wl:
         text_align = 'center'
+        value := model.cwl
     Label: lbl_gvd:
         text = 'GVD'
     Slider: gvd:
-        minimum = -300
-        maximum = 300            
+        resist_width = 'ignore'        
+        FloatTransform: gvd_val:
+            minimum = -250000.0
+            maximum = 100000.0
+            value := model.gvd            
     Field: gvd_f:
         hug_width = 'ignore'
-        text << "%dk"%gvd.value
+        text << "%dk"%(model.gvd//1000)
     Label: lbl_tod:
         text = 'TOD'
     Slider: tod:
-        minimum = -1000
-        maximum = 1000
-        single_step = 10
-        tick_interval = 100
+        resist_width = 'ignore'        
+        FloatTransform: 
+            minimum = -2e6
+            maximum = 2e6
+            value := model.tod
     Field: tod_f:
         hug_width = 'ignore'
-        text << "%dk"%tod.value
+        text << "%dk"%(model.tod/1000)
     Label: lbl_fod:
-        text = 'FOD'
-    Slider: fod:
-        minimum = -100
-        maximum = 100
-        single_step = 10
-        tick_interval = 100
+        text = 'FOD' 
+    Slider: fod:        
+        resist_width = 'ignore'
+        FloatTransform: fod_val:
+            minimum = -20e6
+            maximum = 20e6
+            value := model.fod
     Field: fod_f:        
-        hug_width = 'ignore'
-        text << "%dM"%fod.value
-
-enamldef ShaperControl(Container):    
+        hug_width = 'ignore' 
+        text << "%dM"%(model.fod/1e6)
+ 
+enamldef ShaperControl(VGroup):  
+    attr model
+    padding = 0 
+    spacing = 0
+    constraints << [width <= 300]
     Form:
         Label: 
-            text = 'Power'
+            text = 'Power' 
         Slider:
-            minimum = 0
-            maximum = 100
-            value << (amp_sl.value**2)//100
+            maximum = 1000
+            FloatTransform:
+                minimum = 0.0
+                maximum = 1.0                
+                value := model.power
         Label: 
             text = 'Amplitude'
-        Slider: amp_sl:
-            minimum = 0
-            maximum = 100
-        Label:
-            text = 'Chopped'
+        Slider: amp_sl:       
+            FloatTransform:
+                minimum = 0.0
+                maximum = 1.0
+                value := model.amplitude
+
+    Form:     
+        CheckBox: cb_running:
+            text = 'Running'        
+            checked := model.running
+            tool_tip = 'AOM running'
+        
         CheckBox: cb_chopped:
-            pass
+            text = 'Chopped'        
+            checked := model.chopped
+            tool_tip = 'Use chopped mask'
+        CheckBox: cb_phase:
+            text = 'Phase Cycle'
+            checked := model.phase_cycle
+            tool_tip = 'Apply phase cycling for reduced scatter'
+        CheckBox: cb_disp:
+            text = 'Dispersion' 
+            checked := model.dispersion_correct    
+            enabled << model.calibration != ()
+            tool_tip = 'Apply dispersion compensation phase, requires calibration'         
+        CheckBox: cb_bragg:
+            text = 'Bragg Correction'
+            tool_tip = 'Use Bragg compensation, requires compensation'
+            enabled << model.calibration != ()
+
+    Container:
         Label:
-            text = 'Phase Cycling'
-        CheckBox: cb_chopped:
-            pass
+            text = '<h4>Calibration'
+    HGroup:
+        Conditional:
+            condition << model.calibration != ()
+            Looper:
+                iterable << model.calibration
+                Label:
+                    text = '%.2e'%loop_item
+        Conditional:
+            condition << model.calibration == ()
+            Label:
+                text = 'No calibration'
     GVDControl:
-        pass
+        enabled << parent.model.calibration != ()
+        model = parent.model.disp_settings
+

@@ -16,6 +16,14 @@ def get_dir():
 
 
 class Device(Atom):
+    """
+    Base clss for devices.
+
+    Has two roles: It offers automatic saving of members with a tag `cfg=True`
+    into a config file. It will also register the `on_exit` to be run at exit.
+    By default, it just calls the config saving method. It also    
+
+    """
     name = Str(strict=True)
     state = Enum('init', 'idle', 'busy', 'error', 'custom', 'moving')
     config = Dict()
@@ -31,15 +39,21 @@ class Device(Atom):
 
     def __init__(self) -> None:
         super().__init__()
+        self.load_config()
+        atexit.register(self.on_exit)
+        Device.available_devices.append(self)
+
+    def load_config(self):
         for name, member in self.members().items():
             #print(name, member)
             if member.metadata and 'cfg' in member.metadata:
                 if name in self.config:
                     setattr(self, name, self.config[name])
-        atexit.register(self.on_exit)
-        Device.available_devices.append(self)
 
     def on_exit(self):
+        self.save_config()
+
+    def save_config(self):
         for name, member in self.members().items():
             if member.metadata and 'cfg' in member.metadata:
                 self.config[name] = getattr(self, name)
@@ -111,6 +125,7 @@ class TuneableCam(Cam):
 class MotorAxis(Device):
     position = Float()
     home_pos = Float().tag(cfg=True)
+    last_target = Float().tag(cfg=True)
     unit = Str('mm')
     min_pos = Float(None, strict=False)
     max_pos = Float(None, strict=False)
@@ -120,6 +135,10 @@ class MotorAxis(Device):
 
     def get_pos(self) -> float:
         pass
+
+    def move_relative(self, val):
+        cur_pos = self.get_pos() 
+        self.set_pos(cur_pos+val)        
 
     def is_moving(self) -> bool:
         pass
@@ -134,6 +153,10 @@ class RotationStage(MotorAxis):
     min_pos = set_default(-360)
     max_pos = set_default(360)
 
+class DualRotationStage(Device):
+    rot_stage_0 = Typed(RotationStage)
+    rot_stage_1 = Typed(RotationStage)
+    
 
 class DelayLine(MotorAxis):
     direction = Enum(-1, 1)
@@ -154,7 +177,7 @@ class Shutter(Device):
     is_open = Bool()
 
     def toggle(self):
-        pass
+        raise NotImplementedError
 
     def open(self):
         if self.is_open:
@@ -167,75 +190,3 @@ class Shutter(Device):
             pass
         else:
             self.toggle()
-
-
-def dispersion(nu, nu0, GVD, TOD, FOD):
-    """Calulates the dispersion for given frequencies"""
-    x = nu - nu0
-    x *= (2 * np.pi)
-    facs = np.array([GVD, TOD, FOD]) / np.array([2, 6, 24])
-    return x**2 * facs[0] + x**3 * TOD * facs[1] + x**3 * FOD * facs[2]
-
-
-from scipy.constants import c
-
-
-class DispParams(Atom):
-    center_wl = Float(5000)
-    gvd = Float(0)
-    tod = Float(0)
-    fod = Float(0)
-
-    def phase(self, nu):
-        nu0 = c / self.center_wl * 1000
-        return dispersion(nu, nu0, self.gvd, self.tod, self.fod)
-
-
-def double_pulse_mask(nu: np.ndarray, nu_rf: float, tau: float, phi1: float,
-                      phi2: float):
-    """
-    Return the mask to generate a double pulse
-
-    Parameters
-    ----------
-    nu : array
-        freqs of the shaper pixels in THz
-    nu_rf : float
-        rotating frame freq of the scanned pulse in THz
-    tau : float
-        Interpulse distance in ps
-    phi1 : float
-        Phase shift of the scanned pulse
-    phi2 : float
-        Phase shift of the fixed pulse
-    """
-    double = 0.5 * (np.exp(-1j * (nu - nu_rf) * 2 * np.pi * tau) *
-                    np.exp(+1j * phi1) + np.exp(1j * phi2))
-    return double
-
-
-class DoublePulseParams(Atom):
-    delay = Float(4000)
-    step = Float(50)
-    rot_frame = Float(1500)
-    phase_cycling = Enum(2, 4)
-
-    def masks(self, nu):
-        nu_rf = rot_frame
-        return double_pulse_mask()
-
-
-class Shaper(Device):
-    pixel = Int(4096 * 3)
-    calibration = Tuple(Float).tag(cfg=True)
-    amplitude = Range(0, 1, 0.2).tag(cfg=True)
-    power = Range(0).tag(cfg=True)
-    running = Bool(False).tag(cfg=True)
-    chopping = Bool(False).tag(cfg=True)
-    phase_cycling = Bool(False).tag(cfg=True)
-    disp_correction = Bool(False).tag(cfg=True)
-    disp_params = Typed(DispParams)
-
-    @property
-    def nu(self):
-        return np.polyval(self.calibration, np.arange(self.pixel))

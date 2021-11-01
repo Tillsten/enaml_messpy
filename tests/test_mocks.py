@@ -1,4 +1,3 @@
-from MessPy3.Instruments import mocks
 
 def test_delay_mock():
     dl = mocks.MockDelayLine()

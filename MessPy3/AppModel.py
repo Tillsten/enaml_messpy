@@ -12,7 +12,7 @@ os.environ['CONF_DIR'] = str(pathlib.Path(__file__).parent/'config')
 enamlx.install()
 pg.setConfigOption('useOpenGL', False)
 
-from Instruments.interfaces import Device, TuneableCam, DelayLine
+from Instruments.interfaces import Device, TuneableCam, DelayLine, RotationStage
 from Instruments.mocks import (Cam, DelayLine, MockCam, MockDelayLine,
                                TuneableMockCam)
 from Plans.common import Plan
@@ -24,6 +24,7 @@ class AppState(a.Atom):
     #hardware = a.Typed(HardwareManager, args=())
     current_plan = a.Typed(Plan)
     delay_line = a.Typed(DelayLine)
+    shaper_gratings = a.Tuple(RotationStage)
     available_plans = a.List()
     state = a.Enum('no_plan','running', 'paused', 'finished', 'stopping')
     is_not_stopping = False

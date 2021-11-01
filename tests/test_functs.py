@@ -1,5 +1,5 @@
 import os
-print(os.environ['PYTHONPATH'])
+#print(os.environ['PYTHONPATH'])
 from utils import inline_stats
 import numpy as np
 import numpy.random as r
