@@ -1,6 +1,6 @@
 from enaml.widgets.api import Form, Container, Label, CheckBox, PushButton, HGroup, ComboBox
 from enaml.stdlib.fields import IntField, FloatField
-from enaml.core.api import Looper
+from enaml.core.api import Looper, Conditional
 from .CustomWidgets import StateLabel
 from enaml.application import deferred_call
 
@@ -60,11 +60,15 @@ enamldef SpecControl(Container):
             minimum = 100.0
             submit_triggers = ['return_pressed']
             value :: model.set_wavelength(1e7/value)
-        Label:
-            text = 'Grating'
-        ComboBox:
-            items = ['35 l/mm', '75 l/mm']
-            index = 0
+        Conditional:
+            condition = len(model.grating_list) > 1
+            Label:
+                text = 'Grating'
+            ComboBox:
+                items = model.grating_list
+                index := model.grating_index
+                
+            
 
     HGroup:
         Looper:

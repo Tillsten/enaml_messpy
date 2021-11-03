@@ -6,7 +6,7 @@ import pickle
 import asyncio
 import json
 import atexit
-from typing import ClassVar
+from typing import ClassVar, Protocol
 import threading
 
 
@@ -107,7 +107,12 @@ class Cam(Device):
 class TuneableCam(Cam):
     current_wl: float = Float()
     moving: bool = Bool(False)
-    has_turret: bool = Bool(False)
+
+    grating_list = List(str)
+    grating_index: int = Int(0)
+
+    def _default_grating_index(self):
+        return self.grating_index
 
     def set_wavelength(self):
         raise NotImplementedError
@@ -119,7 +124,10 @@ class TuneableCam(Cam):
         NotImplemented
 
     def get_grating(self) -> int:
-        raise NotImplementedError
+        return 0
+
+    def _observe_grating_index(self, change):
+        self.set_grating(self.grating_index)
 
 
 class MotorAxis(Device):
@@ -137,8 +145,8 @@ class MotorAxis(Device):
         pass
 
     def move_relative(self, val):
-        cur_pos = self.get_pos() 
-        self.set_pos(cur_pos+val)        
+        cur_pos = self.get_pos()
+        self.set_pos(cur_pos + val)
 
     def is_moving(self) -> bool:
         pass
@@ -153,10 +161,11 @@ class RotationStage(MotorAxis):
     min_pos = set_default(-360)
     max_pos = set_default(360)
 
+
 class DualRotationStage(Device):
     rot_stage_0 = Typed(RotationStage)
     rot_stage_1 = Typed(RotationStage)
-    
+
 
 class DelayLine(MotorAxis):
     direction = Enum(-1, 1)
