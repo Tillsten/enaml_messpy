@@ -1,0 +1,9 @@
+enaml
+atom
+pyqtgraph
+enamlx
+pytest
+numpy
+scipy
+qtpy
+seaborn
